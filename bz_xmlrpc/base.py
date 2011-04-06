@@ -44,7 +44,7 @@ class BugzillaBase:
         
         cookie_jar|cookiejar    : cookielib.CookieJar/MozillaCookieJar object.
         user|username|login     : Bugzilla login, usually an email id.
-        password|pass           : Password for bugzilla
+        password|passwd           : Password for bugzilla
         http_proxy|proxy        : String specifying the HTTP proxy of the
         bypass                  : boolean value, asks client to bypass 
                                     password auth and use cookies if present
@@ -64,7 +64,7 @@ class BugzillaBase:
         self.url = extract(kwargs, 'url') or BUGZILLA_URL
 
         self.user = extract(kwargs, 'user', 'username', 'login') or ''
-        self.password = extract(kwargs, 'password', 'pass') or ''
+        self.password = extract(kwargs, 'password', 'passwd') or ''
 
         self.http_proxy = extract(kwargs, 'http_proxy', 'proxy') or ''
         self.bypass = extract(kwargs, 'bypass') or ''
@@ -634,7 +634,8 @@ class CookieTransport(xmlrpclib.Transport):
 
     # This is the same request() method from xmlrpclib.Transport,
     # with a couple additions noted below
-    def request(self, host, handler, request_body, verbose=0):
+
+    def mod_request(self, host, handler, request_body, verbose=0):
         h = self.make_connection(host)
         if verbose:
             h.set_debuglevel(1)
@@ -718,6 +719,18 @@ class CookieTransport(xmlrpclib.Transport):
             response.status, response.reason,
             response.msg,
             )
+
+    def request(self, host, handler, request_body, verbose=0):
+        #retry request once if cached connection has gone cold
+        for i in (0, 1):
+            try:
+                return self.mod_request(host, handler, request_body, verbose)
+            except socket.error, e:
+                if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED):
+                    raise
+            except httplib.BadStatusLine: #close after we sent request
+                if i:
+                    raise
 
     # To enable proxy
     def set_proxy(self, http_proxy):
