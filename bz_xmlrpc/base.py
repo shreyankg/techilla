@@ -381,7 +381,7 @@ class BugzillaBase:
             'updates': kwargs,
             }
         out =  self._proxy.Bug.update(update_hash)
-        return out['bug_updates'].keys()
+        return out['bugs']
 
     def search(self, **kwargs):
         """
