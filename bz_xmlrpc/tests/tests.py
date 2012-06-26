@@ -1,4 +1,4 @@
-# Copyright 2010 Red Hat Inc.
+# Copyright 2010, 2012 Red Hat Inc.
 # Author: Shreyank Gupta <sgupta@redhat.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -7,33 +7,34 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-from django.test import TestCase
+import unittest
 import random
 import os.path
 from bz_xmlrpc.base import BugzillaBase
 from bz_xmlrpc.classes import Bug
-import settings as C
-import unittest
+import settings
 
 
 # Global Bugzilla level test values
-USER = C.USER_TEST_PM['username']
-PASSWORD = C.USER_TEST_PM['password']
+USER = settings.USER['username']
+PASSWORD = settings.USER['password']
+
+BUGZILLA_URL = 'https://partner-bugzilla.redhat.com/'
 
 
 # Original bug test values
 B = {
-    'summary': C.STS_BUG_SUMMARY,
-    'product': C.STS_PRODUCT,
-    'component': C.STS_COMPONENT,
-    'version': '5.0',
+    'summary': 'Test Summary',
+    'product': 'Fedora',
+    'component': 'rpm',
+    'version': '16',
     'description': 'Hello World',
     'platform': 'x86_64',
     'priority': 'low',
     'severity': 'urgent',
     'whiteboard': '3-2-1',
-    'assigned_to': C.USER_TEST_DEVEL['username'],
-    'qa_contact': C.USER_TEST_QA['username'],
+    'assigned_to': 'sgupta@redhat.com',
+    'qa_contact': 'swgoswam@redhat.com',
     'reporter': USER,
     'status': 'NEW',
     'target_milestone': '---',
@@ -42,15 +43,15 @@ B = {
 # Update bug test values
 U = {
     'summary': 'New Summary',
-    'product': C.RHEL_PRODUCT_NAME % 5,
-    'component': 'cairo',
-    'version': '5.0',
+    'product': 'Fedora EPEL',
+    'component': 'cairomm',
+    'version': 'el5',
     'platform': 'i386',
-    'target_milestone': 'rc',
+    'target_milestone': '---',
     'priority': 'high',
     'severity': 'low',
     'whiteboard': '1-2-3',
-    'keywords': ['ABIAssurance'],
+    'keywords': ['Tracking'],
     'groups': ['redhat'],
     'comment': '''Test Comment.
 Second line.''',
@@ -100,14 +101,14 @@ def random_sentence(words=2):
     return ' '.join([random_word() for each in range(words)])
     
 
-class TestBug(TestCase):
+class TestBug(unittest.TestCase):
     
     def setUp(self):
         # if not self.bug:
         self.bz = BugzillaBase(
             user=USER,
             password=PASSWORD,
-            url=C.BUGZILLA_URL
+            url=BUGZILLA_URL
             )
         # Create bug 
         self.bug = self.bz.create(
@@ -253,13 +254,13 @@ class TestBug(TestCase):
     def tearDown(self):
         self.bz.logout()
 
-class TestSearch(TestCase):
+class TestSearch(unittest.TestCase):
     
     def setUp(self):
         self.bz = BugzillaBase(
             user=USER,
             password=PASSWORD,
-            url=C.BUGZILLA_URL
+            url=BUGZILLA_URL
             )
 
     def test_search(self):
