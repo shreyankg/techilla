@@ -375,13 +375,14 @@ class BugzillaBase:
         if 'component' in kwargs:
             kwargs['set_default_assignee'] = True
             kwargs['set_default_qa_contact'] = True
-
-        update_hash = {
-            'ids': ids,
-            'updates': kwargs,
-            }
-        out =  self._proxy.Bug.update(update_hash)
-        return out['bug_updates'].keys()
+        kwargs['ids'] = ids
+        # Fix comments
+        kwargs['comment'] = {'body': kwargs['comment']}
+        if 'commentprivacy' in kwargs:
+            kwargs['comment']['is_private'] = kwargs['commentprivacy']
+            kwargs.pop('commentprivacy')
+        out =  self._proxy.Bug.update(kwargs)
+        return out['bugs']
 
     def search(self, **kwargs):
         """

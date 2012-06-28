@@ -259,7 +259,7 @@ class Bug:
         if comment:
             kwargs['comment'] = comment
         if resolution == 'DUPLICATE' and dupe_id:
-            kwargs['dupe_id'] = dupe_id
+            kwargs['dupe_of'] = dupe_id
         return self.update(**kwargs)
 
     def add_comment(self, comment, private=False):

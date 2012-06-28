@@ -133,9 +133,9 @@ class TestBug(unittest.TestCase):
         self.bug = self.bz.get_bug(self.bug.id)
 
         self.assertEqual(self.bug.product, B['product'])
-        self.assertEqual(self.bug.component, B['component'])
+        self.assertEqual(self.bug.component, [B['component']])
         self.assertEqual(self.bug.summary, B['summary'])
-        self.assertEqual(str(self.bug.version), B['version'])
+        self.assertEqual(self.bug.version, [B['version']])
         self.assertEqual(self.bug.description, B['description'])
         self.assertEqual(self.bug.platform, B['platform'])
         self.assertEqual(self.bug.priority, B['priority'])
@@ -167,8 +167,8 @@ class TestBug(unittest.TestCase):
 
         self.assertEqual(self.bug.summary, U['summary'])
         self.assertEqual(self.bug.product, U['product'])
-        self.assertEqual(self.bug.component, U['component'])
-        self.assertEqual(str(self.bug.version), U['version'])
+        self.assertEqual(self.bug.component, [U['component']])
+        self.assertEqual(self.bug.version, [U['version']])
         self.assertEqual(self.bug.platform, U['platform'])
         self.assertEqual(self.bug.target_milestone, U['target_milestone'])
         self.assertEqual(self.bug.priority, U['priority'])
