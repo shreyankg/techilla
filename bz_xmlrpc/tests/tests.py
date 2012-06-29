@@ -51,7 +51,7 @@ U = {
     'priority': 'high',
     'severity': 'low',
     'whiteboard': '1-2-3',
-    'keywords': ['Tracking'],
+    'keywords': ['Documentation'],
     'groups': ['redhat'],
     'comment': '''Test Comment.
 Second line.''',
@@ -63,9 +63,7 @@ Line two''',
     'status': 'ON_DEV',
     'resolution': 'WONTFIX',
     'flags': {
-        'pm_ack': '+',
-        'devel_ack': '?',
-        'qa_ack': '?',
+        'needinfo': '+',
         },
     }
 
@@ -156,8 +154,8 @@ class TestBug(unittest.TestCase):
             priority=U['priority'],
             severity=U['severity'],
             whiteboard=U['whiteboard'],
-            add_keyword=U['keywords'],
-            add_group=U['groups'],
+            add_keywords=U['keywords'],
+            add_groups=U['groups'],
             comment=U['comment'],
             commentprivacy=U['commentprivacy'],
             status=U['status']
@@ -282,7 +280,7 @@ class TestSearch(unittest.TestCase):
         print [bug.id for bug in bugs]
         for bug in bugs:
             self.assertEqual(bug.product, B['product'])
-            self.assertEqual(bug.component, B['component'])
+            self.assertEqual(bug.component, [B['component']])
             self.assertEqual(bug.summary, B['summary'])
             self.assertEqual(bug.assigned_to, B['assigned_to']),
             self.assertEqual(bug.status, B['status'])
@@ -292,7 +290,7 @@ class TestSearch(unittest.TestCase):
             self.assertEqual(bug.severity, B['severity'])
             self.assertEqual(bug.reporter, B['reporter'])
             self.assertEqual(bug.whiteboard, B['whiteboard'])
-            self.assertEqual(str(bug.version), B['version'])
+            self.assertEqual(bug.version, [B['version']])
             self.assertEqual(bug.target_milestone, B['target_milestone'])
 
     def test_consistancy(self):
@@ -336,9 +334,9 @@ class TestSearch(unittest.TestCase):
         # Assert bug fields 
         bug = bugs[ids.index(self.bug.id)]
         self.assertEqual(bug.product, B['product'])
-        self.assertEqual(bug.component, B['component'])
+        self.assertEqual(bug.component, [B['component']])
         self.assertEqual(bug.summary, summary)
-        self.assertEqual(bug.version, B['version'])
+        self.assertEqual(bug.version, [B['version']])
         self.assertEqual(bug.description, description)
         self.assertEqual(bug.platform, B['platform'])
         self.assertEqual(bug.priority, B['priority'])

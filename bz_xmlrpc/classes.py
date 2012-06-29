@@ -306,7 +306,7 @@ class Bug:
             self._fetch_flags()
 
         return dict([(flag.name, flag.subflags[0].status) for flag in self.flags if
-            (flag.is_active and flag.subflags and flag.name != 'needinfo')])
+            (flag.is_active and flag.subflags )])
 
     def update_flags(self, hash):
         """
