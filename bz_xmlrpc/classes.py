@@ -259,7 +259,7 @@ class Bug:
         if comment:
             kwargs['comment'] = comment
         if resolution == 'DUPLICATE' and dupe_id:
-            kwargs['dupe_id'] = dupe_id
+            kwargs['dupe_of'] = dupe_id
         return self.update(**kwargs)
 
     def add_comment(self, comment, private=False):
@@ -306,7 +306,7 @@ class Bug:
             self._fetch_flags()
 
         return dict([(flag.name, flag.subflags[0].status) for flag in self.flags if
-            (flag.is_active and flag.subflags and flag.name != 'needinfo')])
+            (flag.is_active and flag.subflags )])
 
     def update_flags(self, hash):
         """

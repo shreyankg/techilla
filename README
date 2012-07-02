@@ -4,4 +4,7 @@ Tequilla
 Tequilla is an XMLRPC client for Red Hat Bugzilla. It is a replacement for
 python-bugzilla module.
 
-
+Testing Tequilla
+-----------------
+$ cd bz_xmlrpc
+$ python test.py

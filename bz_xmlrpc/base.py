@@ -329,10 +329,10 @@ class BugzillaBase:
         status                          (string)
                 resolution              (string)
         fixed_in                        (string)
-        [add|delete]_group              (array)
+        [add|remove]_groups              (array)
         [add|delete]_dependson          (array)
         [add|delete]_blocked            (array)
-        [add|delete|makeexact]_keywords (array)
+        [add|remove|set]_keywords (array)
         [add|delete]_partner            (array)
         [add|delete]_verified           (array)
         [add|delete]_cc                 (array)
@@ -373,14 +373,34 @@ class BugzillaBase:
 
         # Get default assignee and qa contact on component change
         if 'component' in kwargs:
-            kwargs['set_default_assignee'] = True
-            kwargs['set_default_qa_contact'] = True
+            kwargs['reset_assigned_to'] = True
+            kwargs['reset_qa_contact'] = True
+        kwargs['ids'] = ids
+        
+        # Fix comments
+        kwargs['comment'] = {'body': kwargs['comment']}
+        if 'commentprivacy' in kwargs:
+            kwargs['comment']['is_private'] = kwargs['commentprivacy']
+            kwargs.pop('commentprivacy')
+        
+        # Fix keywords
+        keywords = {}
+        for each in ['add_keywords', 'delete_keywords', 'set_keywords']:
+            if each in kwargs:
+                keywords[each.split('_')[0]] = kwargs[each]
+                kwargs.pop(each)
+        if keywords:
+            kwargs['keywords'] = keywords
 
-        update_hash = {
-            'ids': ids,
-            'updates': kwargs,
-            }
-        out =  self._proxy.Bug.update(update_hash)
+        # Fix groups
+        groups = {}
+        for each in ['add_groups', 'delete_groups']:
+            if each in kwargs:
+                groups[each.split('_')[0]] = kwargs[each]
+                kwargs.pop(each)
+        if groups:
+            kwargs['groups'] = groups 
+        out =  self._proxy.Bug.update(kwargs)
         return out['bugs']
 
     def search(self, **kwargs):
@@ -415,7 +435,7 @@ class BugzillaBase:
         """
         kwargs['exclude_fields'] = ['internals']
         kwargs['extra_fields'] = ['description']
-        out = self._proxy.Bug.search_new(kwargs)
+        out = self._proxy.Bug.search(kwargs)
         return [Bug(bug, self) for bug in out['bugs']]
 
     def component(self, product_name, component_name):
