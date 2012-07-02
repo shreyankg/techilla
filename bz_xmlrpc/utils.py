@@ -1,4 +1,4 @@
-# Copyright 2010 Red Hat Inc.
+# Copyright 2010, 2012 Red Hat Inc.
 # Author: Shreyank Gupta <sgupta@redhat.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -9,6 +9,15 @@
 
 import base64
 from datetime import datetime
+import time
+
+if hasattr(datetime, 'strptime'):
+    #python 2.6
+    strptime = datetime.strptime
+else:
+    #python 2.4 equivalent
+    strptime = lambda date_string, format: datetime(*(time.strptime(date_string, format)[0:6]))
+
 
 def attachment_encode(fh):
     """
@@ -39,11 +48,11 @@ def to_datetime(xmlrpc_time):
         return None
     if isinstance(xmlrpc_time, str):
         try:
-            return datetime.strptime(xmlrpc_time, "%Y-%m-%d %H:%M:%S")
+            return strptime(xmlrpc_time, "%Y-%m-%d %H:%M:%S")
         except:
-            return datetime.strptime(xmlrpc_time, "%Y.%m.%d %H:%M")
+            return strptime(xmlrpc_time, "%Y.%m.%d %H:%M")
     else:
-        return datetime.strptime(xmlrpc_time.value, "%Y%m%dT%H:%M:%S")
+        return strptime(xmlrpc_time.value, "%Y%m%dT%H:%M:%S")
 
 def extract(hash, *keys):
     """
