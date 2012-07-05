@@ -378,7 +378,8 @@ class BugzillaBase:
         kwargs['ids'] = ids
         
         # Fix comments
-        kwargs['comment'] = {'body': kwargs['comment']}
+        if 'comment' in kwargs:
+            kwargs['comment'] = {'body': kwargs['comment']}
         if 'commentprivacy' in kwargs:
             kwargs['comment']['is_private'] = kwargs['commentprivacy']
             kwargs.pop('commentprivacy')
