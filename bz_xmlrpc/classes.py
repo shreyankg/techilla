@@ -267,17 +267,7 @@ class Bug:
         Add a comment to the bug
         pass private=True for private comment
         """
-        hash = {
-            'id': self.id,
-            'comment': comment,
-            }
-        if private:
-            hash['private'] = True
-        out = self.bz._proxy.Bug.add_comment(hash)
-        if out:
-            return out['id']
-        else:
-            return False
+        return self.bz.add_comment(self.id, comment, private)
 
     def get_groups(self):
         """

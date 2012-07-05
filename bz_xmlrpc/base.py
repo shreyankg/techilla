@@ -493,7 +493,7 @@ class BugzillaBase:
             })
         return out['bugs']
 
-    def update_flags(self, ids, hash):
+    def update_flags(self, ids, hash, nomail=False):
         """
         Updates flags for given bug ids
         hash is a dictionary with flagname as key and state as value 
@@ -501,13 +501,12 @@ class BugzillaBase:
             'flag1': '+',
             'flag2': '?',
             }
-
-        NOTE/TODO: Does not work with needinfo flags
         """
         updates = [{'name': name, 'status': status} for name, status in
             hash.iteritems()]
         out = self._proxy.Flag.update({
             'ids': ids,
+            'nomail': nomail,
             'updates': updates,
             })
         return True
@@ -606,6 +605,25 @@ class BugzillaBase:
         kwargs['data'] = attachment_encode(f)
         out = self._proxy.bugzilla.addAttachment(id, kwargs)
         return out[0]
+
+
+    def add_comment(self, bug_id, comment, private=False):
+        """
+        Add a comment to a given bug id
+        pass private=True for private comment
+        """
+        hash = {
+            'id': bug_id,
+            'comment': comment,
+            }
+        if private:
+            hash['private'] = True
+        out = self._proxy.Bug.add_comment(hash)
+        if out:
+            return out['id']
+        else:
+            return False
+
 
     def _fetch_url(self, url):
         """
