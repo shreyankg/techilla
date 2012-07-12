@@ -4,3 +4,4 @@
 build*
 bz_xmlrpc/settings.conf
 *.swp
+dist*
