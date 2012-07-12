@@ -12,7 +12,7 @@ import random
 import os.path
 from bz_xmlrpc.base import BugzillaBase
 from bz_xmlrpc.classes import Bug
-import settings
+from bz_xmlrpc import settings
 
 
 # Global Bugzilla level test values
