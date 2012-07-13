@@ -20,7 +20,7 @@ doclines = __doc__.split("\n")
 
 setup(
     name='tequilla',
-    version='0.4',
+    version='0.5',
     description=doclines[0],
     long_description="\n".join(doclines[:]),
     platforms=["Linux"],

@@ -2,11 +2,11 @@
 MANIFEST.in
 README
 setup.py
+tequilla.conf
 test.py
 bz_xmlrpc/__init__.py
 bz_xmlrpc/base.py
 bz_xmlrpc/classes.py
-bz_xmlrpc/settings.conf
 bz_xmlrpc/settings.py
 bz_xmlrpc/utils.py
 bz_xmlrpc/tests/__init__.py

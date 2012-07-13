@@ -1,5 +1,5 @@
 include bz_xmlrpc/*.py
 include bz_xmlrpc/tests/*.py
-include bz_xmlrpc/settings.conf
+include tequilla.conf
 include README MANIFEST.in
 include test.py
