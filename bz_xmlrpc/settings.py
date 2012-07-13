@@ -3,9 +3,9 @@
 import glob 
 import os.path 
 
-if os.path.exists('/etc/ABIDiffWeb/settings.conf'):
-    conffile = glob.glob(os.path.join('/etc/ABIDiffWeb/settings.conf')) 
+if os.path.exists('/etc/tequilla/tequilla.conf'):
+    conffile = glob.glob(os.path.join('/etc/tequilla/tequilla.conf')) 
 else:
-    conffile = glob.glob(os.path.join('bz_xmlrpc/settings.conf')) 
+    conffile = glob.glob(os.path.join('tequilla.conf')) 
 for f in conffile:
     execfile(f)

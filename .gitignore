@@ -2,6 +2,6 @@
 .svn*
 *.swp
 build*
-bz_xmlrpc/settings.conf
+tequilla.conf
 *.swp
 dist*
