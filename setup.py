@@ -10,7 +10,7 @@
 # http://www.gnu.org/copyleft/gpl.html for the full text of the
 # license.
 #
-"Tequilla Bugzilla XMLRPC client"
+"Techilla Bugzilla XMLRPC client"
 
 
 from distutils.core import setup
@@ -19,7 +19,7 @@ from distutils.sysconfig import get_python_lib
 doclines = __doc__.split("\n")
 
 setup(
-    name='tequilla',
+    name='techilla',
     version='0.5',
     description=doclines[0],
     long_description="\n".join(doclines[:]),

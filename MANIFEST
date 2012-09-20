@@ -2,7 +2,7 @@
 MANIFEST.in
 README
 setup.py
-tequilla.conf
+techilla.conf
 test.py
 bz_xmlrpc/__init__.py
 bz_xmlrpc/base.py
