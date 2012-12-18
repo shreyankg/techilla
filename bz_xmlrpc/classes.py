@@ -291,9 +291,9 @@ class Bug:
         pass fetch=True in order to fetch the flags from Bugzilla
         
         NOTE/TODO: Does not return needinfo flags
-        """
         if fetch:
             self._fetch_flags()
+        """
 
         return dict([(flag.name, flag.subflags[0].status) for flag in self.flags if
             (flag.is_active and flag.subflags )])

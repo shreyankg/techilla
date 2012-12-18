@@ -228,11 +228,9 @@ class BugzillaBase:
         Accepts a list of int/str bug ids 
         Fetches a group of bugs and returns a list of Bug objects
         """
-        ids = [str(id) for id in ids]
+        ids = {'ids' : [str(id) for id in ids] }
 
-        out = self._proxy.Bug.get({
-            'ids': ids, 
-            })
+        out = self._proxy.Bug.get(ids)
         return [Bug(bug, self) for bug in out['bugs']]
 
 
@@ -254,15 +252,15 @@ class BugzillaBase:
 
     def get_bug(self, id, dummy=False):
         """
-        Uses RedHat.getBug to fetch bug with keywords, 
+        Uses Bug.get to fetch bug with keywords, 
         attachments and comments
         Pass dummy=True to get a empty bug object with id and BugzillaBase set
         """
-        hash = {'id': id}
+        hash = {'ids': id,  'extra_fields': ['flags']}
         if dummy:
             return Bug(hash, self)
         else:
-            out = self._proxy.RedHat.getBug(hash)
+            out = self._proxy.Bug.get(hash)
             return Bug(out, self)
 
     def create(self, **kwargs):
@@ -598,14 +596,19 @@ class BugzillaBase:
                          remember to set this to text/plain. So remember that!
         """
         f = open(file)
-        kwargs['description'] = description
+        kwargs['ids'] = id
+        kwargs['summary'] = description
         if 'filename' not in kwargs:
-            kwargs['filename'] = os.path.basename(f.name)
+            kwargs['file_name'] = os.path.basename(f.name)
+        else:
+            kwargs['file_name'] = kwargs['filename']
         if 'contenttype' not in kwargs:
-            kwargs['contenttype'] = 'application/octet-stream'
+            kwargs['content_type'] = 'application/octet-stream'
+        else:
+            kwargs['content_type'] = kwargs['contenttype']
         kwargs['data'] = attachment_encode(f)
-        out = self._proxy.bugzilla.addAttachment(id, kwargs)
-        return out[0]
+        out = self._proxy.Bug.add_attachment(kwargs)
+        return out
 
 
     def add_comment(self, bug_id, comment, private=False):
