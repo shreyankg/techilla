@@ -19,7 +19,7 @@ from bz_xmlrpc import settings
 USER = settings.USER['username']
 PASSWORD = settings.USER['password']
 
-BUGZILLA_URL = 'https://partner-bugzilla.redhat.com/'
+BUGZILLA_URL = settings.BUGZILLA_URL 
 
 
 # Original bug test values
