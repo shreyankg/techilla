@@ -188,6 +188,8 @@ class TestBug(unittest.TestCase):
         self.bug.close(U['resolution'], comment=U['comment3'])
         # Now test
         self.bug = self.bz.get_bug(self.bug.id)
+        self.bug.get_comments()
+        comments = [comment.text for comment in self.bug.comments]
         self.assertEqual(self.bug.status, 'CLOSED')
         self.assertEqual(self.bug.resolution, U['resolution'])
         self.assertComment(U['comment3'])
@@ -200,8 +202,11 @@ class TestBug(unittest.TestCase):
 
     def test_flags(self):
         self.bug.update_flags(U['flags'])
-        flags = self.bug.get_flags(fetch=True)
+        # Fetch bug
+        self.bug = self.bz.get_bug(self.bug.id)
+        flags = self.bug.get_flags()
         for key, value in U['flags'].iteritems():
+            self.assertTrue(flags.has_key(key))
             self.assertEqual(flags[key], value)
 
     def test_attachment(self):
@@ -218,9 +223,11 @@ class TestBug(unittest.TestCase):
             comment=A['comment'],
             isprivate=A['commentprivacy'],
             contenttype=A['content_type'],
-            )
+            )['ids'][0]
         # fetch
         self.bug = self.bz.get_bug(self.bug.id)
+        self.bug.get_attachments()
+        self.bug.get_comments()
         attachments = self.bug.attachments
         attach_ids = [attachment.id for attachment in attachments]
         # test

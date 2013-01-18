@@ -1,4 +1,4 @@
-# Copyright 2010 Red Hat Inc.
+# Copyright 2010, 2012, 2013 Red Hat Inc.
 # Author: Shreyank Gupta <sgupta@redhat.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -147,11 +147,11 @@ class Bug:
         if self._attachments:
              self._hash2attachments(self._attachments)
 
-        self._groups = self._be( 'groups')
+        self._groups = self._be('groups')
         if self._groups:
             self.groups = [_Group(group) for group in self._groups]
 
-        self._flags = self._be('flag_types')
+        self._flags = self._be('flags')
         if self._flags:
             self.flags = [Flag(flag) for flag in self._flags]
 
@@ -295,8 +295,7 @@ class Bug:
             self._fetch_flags()
         """
 
-        return dict([(flag.name, flag.subflags[0].status) for flag in self.flags if
-            (flag.is_active and flag.subflags )])
+        return dict([(flag.name, flag.status) for flag in self.flags])
 
     def update_flags(self, hash):
         """
@@ -483,27 +482,21 @@ class Flag:
 
     def __init__(self, hash):
         """
-        Initialize
+        Initialize BZ flag object
         """
         self._hash = hash
         self.id = hash['id']
         self.name = hash['name']
-        self.description = hash['description']
-        self.is_active = bool(hash['is_active'])
-        self.subflags = [_SubFlag(subflag) for subflag in hash['flags']]
-
-
-class _SubFlag:
-    """
-    Private Class for atomic subflags
-    """
-
-    def __init__(self, hash):
-        """
-        Initialize
-        """
-        self._hash = hash
-        self.id = hash['id']
-        self.requestee = extract(hash, 'requestee_email', 'requestee_id')
-        self.setter = extract(hash, 'setter_email', 'setter_id')
         self.status = hash['status']
+        self.setter = hash['setter']
+        self.requestee = self._be('requestee')
+        self.type_id = hash['type_id']
+        self.last_modified = hash['modification_date']
+
+    def _be(self, *keys):
+        """
+        Private conviniance wrapper around extract. 
+        Hash defaults to self._hash
+        """
+        return extract(self._hash, *keys)
+ 

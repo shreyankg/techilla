@@ -1,4 +1,4 @@
-# Copyright 2010 Red Hat Inc.
+# Copyright 2010, 2013 Red Hat Inc.
 # Author: Shreyank Gupta <sgupta@redhat.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -228,7 +228,7 @@ class BugzillaBase:
         Accepts a list of int/str bug ids 
         Fetches a group of bugs and returns a list of Bug objects
         """
-        ids = {'ids' : [str(id) for id in ids] }
+        ids = {'ids' : [str(id) for id in ids], 'extra_fields': ['flags']}
 
         out = self._proxy.Bug.get(ids)
         return [Bug(bug, self) for bug in out['bugs']]
@@ -256,12 +256,10 @@ class BugzillaBase:
         attachments and comments
         Pass dummy=True to get a empty bug object with id and BugzillaBase set
         """
-        hash = {'ids': id,  'extra_fields': ['flags']}
         if dummy:
             return Bug(hash, self)
         else:
-            out = self._proxy.Bug.get(hash)
-            return Bug(out, self)
+            return self.get_bugs([id])[0]
 
     def create(self, **kwargs):
         """
