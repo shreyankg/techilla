@@ -228,7 +228,8 @@ class BugzillaBase:
         Accepts a list of int/str bug ids 
         Fetches a group of bugs and returns a list of Bug objects
         """
-        ids = {'ids' : [str(id) for id in ids], 'extra_fields': ['flags']}
+        ids = {'ids' : [str(id) for id in ids], 
+            'extra_fields': ['flags', 'description']}
 
         out = self._proxy.Bug.get(ids)
         return [Bug(bug, self) for bug in out['bugs']]
@@ -600,11 +601,18 @@ class BugzillaBase:
             kwargs['file_name'] = os.path.basename(f.name)
         else:
             kwargs['file_name'] = kwargs['filename']
+        if 'isprivate' not in kwargs:
+            kwargs['is_private'] = False
+        else:
+            kwargs['is_private'] = kwargs['isprivate']
         if 'contenttype' not in kwargs:
             kwargs['content_type'] = 'application/octet-stream'
         else:
             kwargs['content_type'] = kwargs['contenttype']
-        kwargs['data'] = attachment_encode(f)
+        if not kwargs['content_type'] == 'text/plain':
+            kwargs['data'] = attachment_encode(f)
+        else:
+            kwargs['data'] = f.read()
         out = self._proxy.Bug.add_attachment(kwargs)
         return out
 
