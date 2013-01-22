@@ -139,7 +139,7 @@ class Bug:
             self.keywords = self.keywords.split(', ')
         self.fixed_in = self._be('fixed_in') or self.fixed_in
 
-        self._comments = self._be('longdescs')
+        self._comments = self._be('longdescs', 'comments')
         if self._comments:
             self._hash2comments(self._comments)
 

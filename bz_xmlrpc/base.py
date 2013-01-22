@@ -223,13 +223,18 @@ class BugzillaBase:
     
     # XMLRPC fetch methods
 
-    def get_bugs(self, ids):
+    def get_bugs(self, ids, comments, attachments):
         """
         Accepts a list of int/str bug ids 
         Fetches a group of bugs and returns a list of Bug objects
         """
+        extra_fields = ['flags', 'description']
+        if comments:
+            extra_fields.append('comments')
+        if attachments:
+            extra_fields.append('attachments')
         ids = {'ids' : [str(id) for id in ids], 
-            'extra_fields': ['flags', 'description']}
+            'extra_fields': extra_fields}
 
         out = self._proxy.Bug.get(ids)
         return [Bug(bug, self) for bug in out['bugs']]
@@ -251,16 +256,12 @@ class BugzillaBase:
             bug.get_attachments()
         return bug
 
-    def get_bug(self, id, dummy=False):
+    def get_bug(self, id, comments=False, attachments=False):
         """
         Uses Bug.get to fetch bug with keywords, 
         attachments and comments
-        Pass dummy=True to get a empty bug object with id and BugzillaBase set
         """
-        if dummy:
-            return Bug(hash, self)
-        else:
-            return self.get_bugs([id])[0]
+        return self.get_bugs([id], comments, attachments)[0]
 
     def create(self, **kwargs):
         """

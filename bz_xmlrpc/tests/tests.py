@@ -161,8 +161,7 @@ class TestBug(unittest.TestCase):
             status=U['status']
             )
         # Get bug again to verify
-        self.bug = self.bz.get_bug(self.bug.id)
-        self.bug.get_comments()
+        self.bug = self.bz.get_bug(self.bug.id, comments=True)
 
         self.assertEqual(self.bug.summary, U['summary'])
         self.assertEqual(self.bug.product, U['product'])
@@ -191,7 +190,7 @@ class TestBug(unittest.TestCase):
     def test_close(self):
         self.bug.close(U['resolution'], comment=U['comment3'])
         # Now test
-        self.bug = self.bz.get_bug(self.bug.id)
+        self.bug = self.bz.get_bug(self.bug.id, comments=True)
         self.bug.get_comments()
         comments = [comment.text for comment in self.bug.comments]
         self.assertEqual(self.bug.status, 'CLOSED')
@@ -229,9 +228,8 @@ class TestBug(unittest.TestCase):
             contenttype=A['content_type'],
             )['ids'][0]
         # fetch
-        self.bug = self.bz.get_bug(self.bug.id)
-        self.bug.get_attachments()
-        self.bug.get_comments()
+        self.bug = self.bz.get_bug(self.bug.id, comments=True,
+                attachments=True)
         attachments = self.bug.attachments
         attach_ids = [attachment.id for attachment in attachments]
         # test
