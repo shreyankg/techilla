@@ -191,7 +191,6 @@ class TestBug(unittest.TestCase):
         self.bug.close(U['resolution'], comment=U['comment3'])
         # Now test
         self.bug = self.bz.get_bug(self.bug.id, comments=True)
-        self.bug.get_comments()
         comments = [comment.text for comment in self.bug.comments]
         self.assertEqual(self.bug.status, 'CLOSED')
         self.assertEqual(self.bug.resolution, U['resolution'])
@@ -346,7 +345,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(bug.component, [B['component']])
         self.assertEqual(bug.summary, summary)
         self.assertEqual(bug.version, [B['version']])
-        self.assertEqual(bug.description, description)
+        self.assertEqual(bug.description.strip(), description)
         self.assertEqual(bug.platform, B['platform'])
         self.assertEqual(bug.priority, B['priority'])
         self.assertEqual(bug.severity, B['severity'])
