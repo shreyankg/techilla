@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2011 Red Hat Inc.
+# Copyright 2011, 2013 Red Hat Inc.
 # Author: Shreyank Gupta <sgupta@redhat.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@ doclines = __doc__.split("\n")
 
 setup(
     name='techilla',
-    version='0.5',
+    version='4.4',
     description=doclines[0],
     long_description="\n".join(doclines[:]),
     platforms=["Linux"],
