@@ -27,7 +27,7 @@ B = {
     'summary': 'Test Summary',
     'product': 'Fedora',
     'component': 'rpm',
-    'version': '18',
+    'version': '16',
     'description': 'Hello World',
     'platform': 'x86_64',
     'priority': 'low',
