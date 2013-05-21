@@ -14,6 +14,7 @@ import httplib
 import socket
 import errno
 import os
+import mimetypes
 
 
 from classes import Bug, Component, User
@@ -590,10 +591,10 @@ class BugzillaBase:
             comment:   An optional comment about this attachment.
             isprivate: Set to True if the attachment should be marked private.
             ispatch:   Set to True if the attachment is a patch.
-            contenttype: The mime-type of the attached file. Defaults to
-                         application/octet-stream if not set. NOTE that text
-                         files will *not* be viewable in bugzilla unless you 
-                         remember to set this to text/plain. So remember that!
+            contenttype: The mime-type of the attached file. Will try to guess
+                         mimetype if not set. NOTE that text files will *not*
+                         be viewable in bugzilla unless you remember to set
+                         this to text/plain. So remember that!  
         """
         f = open(file)
         kwargs['ids'] = id
@@ -607,11 +608,15 @@ class BugzillaBase:
         else:
             kwargs['is_private'] = kwargs['isprivate']
         if 'contenttype' not in kwargs:
-            kwargs['content_type'] = 'application/octet-stream'
+            ctype = mimetypes.guess_type(file)[0]
+            if ctype:
+                kwargs['content_type'] = ctype
+            else:
+                kwargs['content_type'] = 'application/octet-stream'
         else:
             kwargs['content_type'] = kwargs['contenttype']
         if not kwargs['content_type'] == 'text/plain':
-            kwargs['data'] = attachment_encode(f)
+            kwargs['data'] = xmlrpclib.Binary(f.read())
         else:
             kwargs['data'] = f.read()
         out = self._proxy.Bug.add_attachment(kwargs)
