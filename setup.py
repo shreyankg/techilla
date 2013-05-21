@@ -19,22 +19,14 @@ from distutils.sysconfig import get_python_lib
 doclines = __doc__.split("\n")
 
 setup(
-    name='python-techilla',
+    name='techilla',
     version='4.4',
     description=doclines[0],
     long_description="\n".join(doclines[:]),
     platforms=["Linux"],
     author='Shreyank Gupta',
     author_email='sgupta@redhat.com',
-    url='http://www.redhat.com',
+    url='',
     license='http://www.gnu.org/licenses/old-licenses/gpl-2.0.html',
     packages=['bz_xmlrpc'],
-    data_files=[
-        (
-            "/etc/techilla/",
-            [
-                "techilla.conf"
-            ]
-        ),
-    ]
 )

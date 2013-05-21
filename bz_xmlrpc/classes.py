@@ -13,80 +13,66 @@ from utils import extract, to_datetime, show_bug_url
 
 class Bug:
     """
-    The Bugzilla Bug Object
-    -----------------------
-
-    Attributes:
-    -----------
-    bz                  : Points to the BugzillaBase instance for the bug
-
-    id                  : bug id
-    summary             : Bug summary
-    description         : Bug description
-    assigned_to         : Assigned to Bugzilla login
-    qa_contact          : QA Contact Bugzilla login
-    reporter            : Reported By Bugzilla login
-    product             : Product
-    component           : Component
-    creation_time       : Bug creation time, datetime
-    last_change_time    : Last modified time, datetime
-    dupe_of             : Duplicate of bug id
-    priority            : Bug Priority
-    severity            : Bug Severity
-    partner             : Partners - array
-    target_milestone    : Target milestone
-    status              : Bug Status
-    resolution          : Resulotion of closed bug
-    whiteboard          : Bug status whiteboard
-    version             : Version of platform
-    platform            : Platform architecture
-    keywords            : Array of keywords
-    fixed_in            : Fixed in version
-
-    comments            : Array of Comment objects, incuding bug description.
-    attachments         : Array of Attachment objects
-    groups              : Array of Group objects
-    flags               : Array of Flag objects
-
+    The Bugzilla Bug Class 
     """
+
+    bz = None               #: :class:`bz_xmlrpc.base.BugzillaBase` instance
+
+    id = 0                  #: Bug id
+    summary = ''            #: Summary
+    description = ''        #: Description
+    assigned_to = ''        #: Assignee
+    qa_contact = ''         #: QA Contact 
+    reporter = ''           #: Reported by
+    product = ''            #: Product
+    component = ''          #: Component
+    creation_time = ''      #: Created timestamp
+    last_change_time = ''   #: Last Modified on
+    dupe_of = 0             #: Duplicate of bug  
+    priority = ''           #: Priority
+    severity = ''           #: Severity
+    partner = ''            #: Partner
+    target_milestone = ''   #: Target Milestone
+    status = ''             #: Status
+    whiteboard = ''         #: Whiteboard
+    resolution = ''         #: Resolution
+    version = 0             #: Version
+    platform = ''           #: Platform
+    keywords = []           #: Keywords
+    fixed_in = ''           #: Fixed in version
+
+    #: List of :class:`~bz_xmlrpc.classes.Comment` objects
+    comments = [] 
+
+    #: List of :class:`~bz_xmlrpc.classes.Attachment` objects
+    attachments = []
+    
+    #: List of :class:`_Group` objects. 
+    #: Use :meth:`~bz_xmlrpc.classes.Bug.get_groups()` instead.
+    groups = []             
+
+    #: List of :class:`Flag` objects
+    #: Use :meth:`~bz_xmlrpc.classes.Bug.get_flags()` instead
+    flags = []              
+        
 
     def __init__(self, hash, bz):
         """
-        Initialise a bug object
+        Initialise a bug object.
 
-        A hash of bug attributes and a BugzillaBase object needs to be passed
-        as parameters.
+        :arg hash: Dictionary of bug details
+        :arg bz: Instance of :class:`~bz_xmlrpc.base.BugzillaBase` object
+
+        :return: Instance of :class:`Bug`
+        .. note::
+            No need to use this directly. 
+            Use :meth:`~bz_xmlrpc.base.BugzillaBase.get_bug()`
+            or :meth:`~bz_xmlrpc.base.BugzillaBase.search()`
+
         """
 
         self.bz = bz
 
-        self.id = 0
-        self.summary = ''
-        self.description = ''
-        self.assigned_to = ''
-        self.qa_contact = ''
-        self.reporter = ''
-        self.product = ''
-        self.component = ''
-        self.creation_time = ''
-        self.last_change_time = ''
-        self.dupe_of = 0
-        self.priority = ''
-        self.severity = ''
-        self.partner = ''
-        self.target_milestone = ''
-        self.status = ''
-        self.whiteboard = ''
-        self.resolution = ''
-        self.version = 0
-        self.platform = ''
-        self.keywords = []
-        self.fixed_in = ''
-        self.comments = []
-        self.attachments = []
-        self.groups = []
-        self.flags = []
-        
         # Extract available data 
         if hash:
             self._populate(hash)
@@ -172,6 +158,8 @@ class Bug:
 
         For retriving comments without fetching them try the comments
         attribute 
+
+        :rtype: list of :class:`~bz_xmlrpc.classes.Comment` objects
         """
         comment_list = \
             self.bz._get_comments([self.id])[str(self.id)]['comments']
@@ -185,6 +173,8 @@ class Bug:
 
         For retriving attachments without fetching them try the attachments
         attribute 
+
+        :rtype: list of :class:`~bz_xmlrpc.classes.Attachment` objects
         """
         attachment_list = \
             self.bz._get_attachments([self.id])[str(self.id)]
@@ -195,48 +185,86 @@ class Bug:
         """
         Update bug with parameters from kwargs
 
-        Accepted parameters:
-        --------------------
-        product                         (string)
-            (also update component, version and target_milestone)
-        component                       (string)
-            (assigned_to, qa_contact gets updated)
-        version                         (string)
-        target_milestone                (string)
-        op_sys                          (string)
-        platform                        (string)
-        summary                         (string)
-        priority                        (string)
-        severity                        (string)
-        url                             (string)
-        whiteboard                      (string)
-        comment                         (string)
-                commentprivacy          (boolean) 
-        assigned_to                     (string)
-        qa_contact                      (string)
-        dupe_id                         (integer)
-        status                          (string)
-                resolution              (string)
-        fixed_in                        (string)
-        [add|delete]_group              (array)
-        [add|delete]_dependson          (array)
-        [add|delete]_blocked            (array)
-        [add|delete|makeexact]_keywords (array)
-        [add|delete]_partner            (array)
-        [add|delete]_verified           (array)
-        [add|delete]_cc                 (array)
-        [add|delete]_alias              (array)
-        [devel|qa|internal]_whiteboard  (string)
-        [cclist|reporter]_accessible    (boolean)
+        String parameters:
 
-        eg: 
-        bug.update(
-            product='Red Hat Enterprise Linux 6', 
-            component='gimp',
-            version='6.0', 
-            target_milestone='rc', 
-            add_group=['redhat']
-            ) 
+        :arg product:                   Product 
+            (also updates component, version and target_milestone)
+        :type product:                  `str`
+        :arg component:                 Component
+            (assigned_to, qa_contact gets updated)
+        :type component:                `str`
+        :arg version:                   Version 
+        :type version:                  `str`
+        :arg target_milestone:          Target Milestone
+        :type target_milestone:         `str`
+        :arg op_sys:                    Operating System 
+        :type op_sys:                   `str`
+        :arg platform:                  Platform 
+        :type platform:                 `str`
+        :arg summary:                   Summary
+        :type summary:                  `str`
+        :arg priority:                  Priority 
+        :type priority:                 `str`
+        :arg severity:                  Severity 
+        :type severity:                 `str`
+        :arg url:                       URL 
+        :type url:                      `str`
+        :arg whiteboard:                Whiteboard 
+        :type whiteboard:               `str`
+        :arg comment:                   Comment 
+        :type comment:                  `str`
+        :arg commentprivacy:            Private Comment
+            (only in case you have provided a comment) 
+        :type commentprivacy:           `boolean`
+        :arg assigned_to:               Assigned to
+        :type assigned_to:              `str`
+        :arg qa_contact:                QA contact
+        :type qa_contact:               `str`
+        :arg status:                    Status
+        :type status:                   `str`
+        :arg resolution:                Resolution
+            (only in case there is a status provided)
+        :type resolution:               `str`
+        :arg fixed_in:                  Fixed in Version
+        :type fixed_in:                 `str`
+        :arg [devel|qa|internal]_whiteboard:
+        :type [devel|qa|internal]_whiteboard: `str`
+        :arg [add|delete]_group:        Add/Delete Group
+        :type [add|delete]_group:       `list`
+        :arg [add|delete]_dependson:    Add/Delete Depends on
+        :type [add|delete]_dependson:   `list`
+        :arg [add|delete]_blocked:      Add/Delete Blocked
+        :type [add|delete]_blocked:     `list`
+        :arg [add|delete|makeexact]_keywords: 
+            Add/Delete/MakeExact Keywords
+        :type [add|delete|makeexact]_keywords: `list`
+        :arg [add|delete]_partner:      Add/Delete Partner
+        :type [add|delete]_partner:     `list`
+        :arg [add|delete]_verified:     Add/Delete Varivied
+        :type [add|delete]_verified:    `list`
+        :arg [add|delete]_cc:           Add/Delete cc list
+        :type [add|delete]_cc:          `list`
+        :arg [add|delete]_alias:        Add/Delete Alias
+        :type [add|delete]_alias:       `list`
+        :arg cclist_accessible:    
+        :type cclist_accessible:        `boolean`
+        :arg reporter_accessible:    
+        :type reporter_accessible:      `boolean`
+        :arg dupe_id:                   Duplicate bug id
+        :type dupe_id:                  `integer`
+
+        :return: True if update worked, False if not
+        :rtype: `boolean`
+
+        Example:: 
+
+            bug.update(
+                product='Red Hat Enterprise Linux 6', 
+                component='gimp',
+                version='6.0', 
+                target_milestone='rc', 
+                add_group=['redhat']
+                ) 
 
         """
         out = self.bz._update(self.id, kwargs)
@@ -249,7 +277,16 @@ class Bug:
     def close(self, resolution, comment=None, dupe_id=None):
         """
         Convenience wrapper around update to close bugs
-        Optional arg: comment
+
+        :arg resolution:                Bug close resolution
+        :type resolution:               `str`
+        :arg comment:                   Optional comment
+        :type comment:                   `str` or None
+        :arg dupe_id:                   Optional Duplicate bug id
+        :type comment:                   `str` or None
+
+        :return: True if update worked, False if not
+        :rtype: `boolean`
         """
         kwargs = {
             'status': 'CLOSED',
@@ -264,14 +301,19 @@ class Bug:
 
     def add_comment(self, comment, private=False):
         """
-        Add a comment to the bug
-        pass private=True for private comment
+        Add a comment to the bug. Pass private=True for private comment
+
+        :arg comment:                   Optional comment
+        :type comment:                   `str` or None
+        :arg private:                   Private Comment
+        :type private:                  `boolean`
         """
         return self.bz.add_comment(self.id, comment, private)
 
     def get_groups(self):
         """
-        Returns Bugzilla group names the bug is on, as a list
+        :return:                        Bugzilla group names the bug is on
+        :rtype:                         `list`
         """
         if self.groups:
             return [group.name for group in self.groups if group.ison]
@@ -285,14 +327,12 @@ class Bug:
         if self._flags:
             self.flags = [Flag(flag) for flag in self._flags]
 
-    def get_flags(self, fetch=False):
+    def get_flags(self):
         """
-        Return Bugzilla flags for the bug in dict format
-        pass fetch=True in order to fetch the flags from Bugzilla
+        Return Bugzilla flags for the bug
         
-        NOTE/TODO: Does not return needinfo flags
-        if fetch:
-            self._fetch_flags()
+        :return:                        Dictionary of flags and values
+        :rtype:                         `dict`
         """
 
         return dict([(flag.name, flag.status) for flag in self.flags])
@@ -300,35 +340,46 @@ class Bug:
     def update_flags(self, hash):
         """
         Updates flags for the bug
-        hash is a dictionary with flagname as key and state as value 
-        e.g. {
-            'flag1': '+',
-            'flag2': '?',
-            }
+        :arg hash: Dictionary with flagname as key and state as value 
 
-        NOTE/TODO: Does not work with needinfo flags
+        :return: `True` if successful
+        :raises: :class:`xmlrpclib.Fault` in case of invalid input.
+
+        Example::
+
+            bug.update_flags({
+                'flag1': '+',
+                'flag2': '?',
+                })
         """
         return self.bz.update_flags(self.id, hash)
 
     def add_attachment(self, file, description, **kwargs):
         """
-        Attach a file to the bug. Returns the ID of the attachment
-        or returns None if something goes wrong.
+        Attach a file to the bug. 
 
-        Compulsory arguements:
-        ----------------------
-        file            : should be a filename.
-        description     : is the short description of this attachment.
+        :arg file:                      Should be a filename
+        :type file:                     `str`
+        :arg description:               Description of this attachment
+        :type description:              `str`
+        :arg comment:                   (optional) 
+            Comment about this attachment.
+        :type comment:                  `str` or None
+        :arg isprivate:                 (optional)
+            True if attachment is private.
+        :type isprivate:                `boolean` or None
+        :arg ispatch:                   (optional)
+            True if attachment is a patch.
+        :type ispatch:                  `boolean` or None
+        :arg contenttype:               (optional)
+            Mime-type of the attached file. 
+            Defaults to application/octet-stream if not set.  
+        .. note:: 
+            Text files will `not` be viewable in bugzilla unless you
+            set `contenttype=text/plain`
 
-        Optional arguements:
-        --------------------
-        comment         : A comment about this attachment.
-        isprivate       : Set to True if the attachment should be marked private.
-        ispatch         : Set to True if the attachment is a patch.
-        contenttype     : The mime-type of the attached file. Defaults to
-                          application/octet-stream if not set. 
-                     NOTE: text files will *not* be viewable in bugzilla 
-                     unless you remember to set this to text/plain.
+        :return:                        Attachment id or None of fails.
+        :rtype:                         `dict` or None  
         """
         return self.bz.add_attachment(self.id, file, description, **kwargs)
 
@@ -343,9 +394,24 @@ class Comment:
     """
     Bugzilla comment object
     """
+    id = ''                 #: Comment id
+    author = ''             #: Author email
+    bug = ''                #: :class:`~bz_xmlrpc.classes.Bug` object 
+    is_private = ''         #: True if private comment
+    text = ''               #: Comment body
+    time = None             #: Timestamp
+
     def __init__(self, bug, hash):
         """
         Initialize comments
+
+        :arg hash: Dictionary of comment details
+        :arg bug: Instance of :class:`~bz_xmlrpc.classes.Bug` object
+
+        :return: Instance of :class:`Comment`
+        .. note::
+            No need to use this directly. 
+            Use :meth:`~bz_xmlrpc.classes.Bug.get_comments()`
         """
         self._hash = hash
         self.id = extract(hash, 'id', 'comment_id')
@@ -361,9 +427,33 @@ class Attachment:
     """
     Bugzilla attachment object
     """
+    id = ''                 #: Attachment id
+    content_type = ''       #: Content type
+    creation_time = None    #: Creation timestamp
+    attacher = ''           #: Attacher email
+    description = ''        #: Description
+    file_name = ''          #: Filename
+    bug = ''                #: :class:`~bz_xmlrpc.classes.Bug` object 
+    is_private = ''         #: True if private comment
+    is_obsolete = ''        #: True if attachment is obsolete 
+    is_patch = ''           #: True if attachment is a patch 
+    is_url = ''             #: True if attachment is a URL
+    last_change_time = None #: Last modified timestamp
+    fetch_url = ''          #: URL for the attachment
+
+
     def __init__(self, bug, hash):
         """
         Initialize attachments
+
+        :arg hash: Dictionary of attachment details
+        :arg bug: Instance of :class:`~bz_xmlrpc.classes.Bug` object
+
+        :return: Instance of :class:`Attachment`
+        .. note::
+            No need to use this directly. 
+            Use :meth:`~bz_xmlrpc.classes.Bug.get_attachments()`
+
         """
         self._hash = hash
         self.id = extract(hash, 'id', 'attach_id')
@@ -383,7 +473,7 @@ class Attachment:
         self.is_url = bool(extract(hash, 'is_url', 'isurl'))
         self.last_change_time = to_datetime(extract(hash, 
             'last_change_time', 'modification_time'))
-        self.fetch_url = ''
+
         if self.id and self.bug:
             self.fetch_url = bug.bz.url.replace('xmlrpc.cgi',
                 'attachment.cgi?id=%s' % self.id)
@@ -391,8 +481,12 @@ class Attachment:
     def fetch(self, path=None):
         """
         Fetches the attachment
-        returns a urllib2 object of no download path is specified
-        otherwise it returns the full path of the downloaded file.
+
+        :arg path:                      Download path for the attchment
+        :type path:                     `str`
+
+        :return:                        :class:`urllib2` object of no download
+            path is specified, else the full path of the downloaded file.
         """
         stream = self.bug.bz._fetch_url(self.fetch_url)
         if path:
@@ -403,7 +497,6 @@ class Attachment:
             return full_path
         else:
             return stream
-
 
 class _Group:
     """
@@ -434,7 +527,7 @@ class _Group:
 
 class Component:
     """
-    Bugzilla product component object
+    Bugzilla product component class 
     """
 
     def __init__(self, hash):
