@@ -20,7 +20,7 @@ doclines = __doc__.split("\n")
 
 setup(
     name='python-techilla',
-    version='4.4',
+    version='4.4.1',
     description=doclines[0],
     long_description="\n".join(doclines[:]),
     platforms=["Linux"],

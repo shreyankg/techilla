@@ -1,7 +1,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python-techilla
-Version:        4.4
+Version:        4.4.1
 Release:        1%{?dist}
 Summary:        Bugzilla XMLRPC client 
 License:        GPLv2
@@ -33,10 +33,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc README MANIFEST.in 
 %{python_sitelib}/bz_xmlrpc/*.py*
-%{python_sitelib}/bz_xmlrpc/tests/*.py*
 %{python_sitelib}/python_techilla*egg-info
 %config(noreplace) %{_sysconfdir}/techilla/techilla.conf
 
 %changelog
+* Tue May 21 2013 Shreyank Gupta <sgupta@redhat.com> - 4.4.1-1
+- Fix attachment encode issue. Guess Mimetype.
+
 * Tue Apr 22 2013 Shreyank Gupta <sgupta@redhat.com> - 4.4-1
 - Initial release.
