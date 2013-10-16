@@ -20,7 +20,7 @@ from classes import Bug, Component, User
 from utils import extract, _check_http_error
 
 BUGZILLA_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
-COOKIE_DIR = '/tmp/bzcookies/'
+COOKIE_DIR = os.path.expanduser('~/.techilla/')
 
 
 USER_AGENT = 'Python-urllib2/%s ' % urllib2.__version__
