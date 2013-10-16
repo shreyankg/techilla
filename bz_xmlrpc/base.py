@@ -11,14 +11,13 @@ import xmlrpclib
 import cookielib
 import urllib2
 import httplib
-import socket
-import errno
 import os
 import mimetypes
-
+import pycurl
+import StringIO
 
 from classes import Bug, Component, User
-from utils import extract, attachment_encode
+from utils import extract, _check_http_error
 
 BUGZILLA_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 COOKIE_DIR = '/tmp/bzcookies/'
@@ -44,8 +43,10 @@ class BugzillaBase:
                 If not provided, value of BUGZILLA_URL will be defaulted to.
         
         cookie_jar|cookiejar    : cookielib.CookieJar/MozillaCookieJar object.
+        ssl_verify|sslverify    : boolean value, whether to verify ssl
+                                    certificate or not.
         user|username|login     : Bugzilla login, usually an email id.
-        password|passwd           : Password for bugzilla
+        password|passwd         : Password for bugzilla
         http_proxy|proxy        : String specifying the HTTP proxy of the
         bypass                  : boolean value, asks client to bypass 
                                     password auth and use cookies if present
@@ -61,6 +62,7 @@ class BugzillaBase:
         self._init_private_data()
         # Extract provided values or default
         self._cookiejar = extract(kwargs, 'cookie_jar', 'cookiejar')
+        self._sslverify = extract(kwargs, 'ssl_verify', 'sslverify') or True
             
         self.url = extract(kwargs, 'url') or BUGZILLA_URL
 
@@ -115,27 +117,29 @@ class BugzillaBase:
         """
         if url:
             self.url = url
+        # Assume ends with /xmlrpc.cgi
+        if not self.url.endswith('xmlrpc.cgi'):
+            self.url = urllib2.urlparse.urljoin(self.url, 'xmlrpc.cgi')
+
         if http_proxy:
             self.http_proxy = http_proxy
         if not self.http_proxy and os.environ.has_key('http_proxy'):
             self.http_proxy = os.environ['http_proxy']
 
+        self.initcookiefile() 
+
         # Set up the transport
-        self.initcookiefile() # sets _cookiejar
-        if self.url.startswith('https'):
-            self._transport = SafeCookieTransport()
-        else:
-            self._transport = CookieTransport() 
+        self._transport = _CURLTransport(
+            self.url, 
+            self._cookiejar,
+            sslverify=self._sslverify
+            )
+
         self._transport.user_agent = self.user_agent
-        self._transport.cookiejar = self._cookiejar
         
         # Set HTTP proxy if required
         if self.http_proxy:
             self._transport.set_proxy(self.http_proxy)
-
-        # Assume ends with /xmlrpc.cgi
-        if not self.url.endswith('xmlrpc.cgi'):
-            self.url = urllib2.urlparse.urljoin(self.url, 'xmlrpc.cgi')
 
         # Set up the proxy, using the transport
         self._proxy = xmlrpclib.ServerProxy(self.url,self._transport,
@@ -645,9 +649,26 @@ class BugzillaBase:
         """
         Fetches a url in BZ using cookies
         """
-        cookie_p = urllib2.HTTPCookieProcessor(self._cookiejar)
-        opener = urllib2.build_opener(cookie_p)
-        return opener.open(url)
+        headers = {}
+        ret = StringIO.StringIO()
+
+        def headers_cb(buf):
+            if not ":" in buf:
+                return
+            name, val = buf.split(":", 1)
+            headers[name.lower()] = val
+
+        c = self._transport.c
+        c.setopt(pycurl.URL, url)
+        c.setopt(pycurl.WRITEFUNCTION, ret.write)
+        c.setopt(pycurl.HEADERFUNCTION, headers_cb)
+        c.setopt(pycurl.FOLLOWLOCATION, 1)
+        c.perform()
+        c.close()
+
+        # Hooray, now we have a file-like object with .read() 
+        ret.seek(0)
+        return ret
         
 
 class CookieResponse:
@@ -663,128 +684,104 @@ class CookieResponse:
     def info(self): 
         return self.headers
 
-
-class CookieTransport(xmlrpclib.Transport):
+class _CURLTransport(xmlrpclib.Transport):
     """
-    A subclass of xmlrpclib.Transport that supports cookies.
+    Pycurl's implementation of xmlrpclib.Transport
+    Useful for getting ssl certificates verified.
     """
-    cookiejar = None
-    scheme = 'http'
 
-    # Cribbed from xmlrpclib.Transport.send_user_agent 
-    def send_cookies(self, connection, cookie_request):
-        if self.cookiejar is None:
-            self.cookiejar = cookielib.CookieJar()
-        elif self.cookiejar:
-            self.cookiejar.add_cookie_header(cookie_request)
-            # Pull the cookie headers out of the request object...
-            cookielist=list()
-            for h,v in cookie_request.header_items():
-                if h.startswith('Cookie'):
-                    cookielist.append([h,v])
-            # ...and put them over the connection
-            for h,v in cookielist:
-                connection.putheader(h,v)
+    def __init__(self, url, cookiejar,
+                 sslverify=True, sslcafile=None, debug=0):
 
-    # This is the same request() method from xmlrpclib.Transport,
-    # with a couple additions noted below
+        if hasattr(xmlrpclib.Transport, "__init__"):
+            xmlrpclib.Transport.__init__(self, use_datetime=False)
 
-    def mod_request(self, host, handler, request_body, verbose=0):
-        h = self.make_connection(host)
-        if verbose:
-            h.set_debuglevel(1)
+        self.verbose = debug
 
-        # ADDED: construct the URL and Request object for proper cookie handling
-        request_url = "%s://%s%s" % (self.scheme,host,handler)
-        cookie_request  = urllib2.Request(request_url) 
+        # transport constructor needs full url too, as xmlrpc does not pass
+        # scheme to request
+        self.scheme = urllib2.urlparse.urlparse(url)[0]
+        if self.scheme not in ["http", "https"]:
+            raise Exception("Invalid URL scheme: %s (%s)" % (self.scheme, url))
 
-        self.send_request(h,handler,request_body)
-        self.send_host(h,host) 
-        self.send_cookies(h,cookie_request) # ADDED. creates cookiejar if None.
-        self.send_user_agent(h)
-        self.send_content(h,request_body)
+        self.c = pycurl.Curl()
+        self.c.setopt(pycurl.POST, 1)
+        self.c.setopt(pycurl.CONNECTTIMEOUT, 30)
+        self.c.setopt(pycurl.HTTPHEADER, [
+            "Content-Type: text/xml",
+        ])
+        self.c.setopt(pycurl.VERBOSE, debug)
 
-        if hasattr(h, 'getreply'):
-            # python 2.6 
-            errcode, errmsg, headers = h.getreply()
+        self.set_cookiejar(cookiejar)
 
-            # ADDED: parse headers and get cookies here
-            cookie_response = CookieResponse(headers)
-            # Okay, extract the cookies from the headers
-            self.cookiejar.extract_cookies(cookie_response,cookie_request)
-            # And write back any changes
-            if hasattr(self.cookiejar,'save'):
-                try:
-                    self.cookiejar.save(self.cookiejar.filename)
-                except e:
-                    print "Couldn't write cookiefile %s: %s" % \
-                            (self.cookiejar.filename,str(e))
+        # ssl settings
+        if self.scheme == "https":
+            # override curl built-in ca file setting
+            if sslcafile is not None:
+                self.c.setopt(pycurl.CAINFO, sslcafile)
 
-            if errcode != 200:
-                raise xmlrpclib.ProtocolError(
-                    "%s://%s%s" % (self.scheme,host,handler),
-                    errcode, errmsg,
-                    headers
-                    )
+            # disable ssl verification
+            if not sslverify:
+                self.c.setopt(pycurl.SSL_VERIFYPEER, 0)
+                self.c.setopt(pycurl.SSL_VERIFYHOST, 0)
 
-            self.verbose = verbose
+    def set_cookiejar(self, cj):
+        self.c.setopt(pycurl.COOKIEFILE, cj.filename or "")
+        self.c.setopt(pycurl.COOKIEJAR, cj.filename or "")
 
-            try:
-                sock = h._conn.sock
-            except AttributeError:
-                sock = None
+    def get_cookies(self):
+        return self.c.getinfo(pycurl.INFO_COOKIELIST)
 
-            f = h.getfile()
-            retval = self._parse_response(f, sock)
-            return retval
-        else:
-            # python 2.7
-            try:
-                response = h.getresponse(buffering=True)
+    def _open_helper(self, url, request_body):
+        self.c.setopt(pycurl.URL, url)
+        self.c.setopt(pycurl.POSTFIELDS, request_body)
 
-                # ADDED: parse headers and get cookies here
-                cookie_response = CookieResponse(response.msg)
-                # Okay, extract the cookies from the headers
-                self.cookiejar.extract_cookies(cookie_response,cookie_request)
-                # And write back any changes
-                if hasattr(self.cookiejar,'save'):
-                    try:
-                        self.cookiejar.save(self.cookiejar.filename)
-                    except Exception, e:
-                        print "Couldn't write cookiefile %s: %s" % \
-                                (self.cookiejar.filename,str(e))
+        b = StringIO.StringIO()
+        headers = StringIO.StringIO()
+        self.c.setopt(pycurl.WRITEFUNCTION, b.write)
+        self.c.setopt(pycurl.HEADERFUNCTION, headers.write)
 
-                if response.status == 200:
-                    self.verbose = verbose
-                    return self.parse_response(response)
-            except xmlrpclib.Fault:
-                raise
-            except Exception:
-                # All unexpected errors leave connection in
-                # a strange state, so we clear it.
-                self.close()
-                raise
+        try:
+            m = pycurl.CurlMulti()
+            m.add_handle(self.c)
+            while True:
+                if m.perform()[0] == -1:
+                    continue
+                num, ok, err = m.info_read()
+                ignore = num
 
-        #discard any response data and raise exception
-        if (response.getheader("content-length", 0)):
-            response.read()
-        raise xmlrpclib.ProtocolError(
-            host + handler,
-            response.status, response.reason,
-            response.msg,
-            )
+                if ok:
+                    m.remove_handle(self.c)
+                    break
+                if err:
+                    m.remove_handle(self.c)
+                    raise pycurl.error(*err[0][1:])
+                if m.select(.1) == -1:
+                    # Looks like -1 is passed straight up from select(2)
+                    # While it's not true that this will always be caused
+                    # by SIGINT, it should be the only case we hit
+                    log.debug("pycurl select failed, this likely came from "
+                              "SIGINT, raising")
+                    m.remove_handle(self.c)
+                    raise KeyboardInterrupt
+        except pycurl.error, e:
+            raise xmlrpclib.ProtocolError(url, e[0], e[1], None)
+
+        b.seek(0)
+        headers.seek(0)
+        return b, headers
 
     def request(self, host, handler, request_body, verbose=0):
-        #retry request once if cached connection has gone cold
-        for i in (0, 1):
-            try:
-                return self.mod_request(host, handler, request_body, verbose)
-            except socket.error, e:
-                if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED):
-                    raise
-            except httplib.BadStatusLine: #close after we sent request
-                if i:
-                    raise
+        self.verbose = verbose
+        url = "%s://%s%s" % (self.scheme, host, handler)
+
+        # xmlrpclib fails to escape \r
+        request_body = request_body.replace('\r', '&#xd;')
+
+        body, headers = self._open_helper(url, request_body)
+        _check_http_error(url, body.getvalue(), headers.getvalue())
+
+        return self.parse_response(body)
 
     # To enable proxy
     def set_proxy(self, http_proxy):
@@ -804,14 +801,6 @@ class CookieTransport(xmlrpclib.Transport):
 
     def _send_proxy_host(self, connection, host):
         connection.putheader('Host', self.realhost)
-
-
-class SafeCookieTransport(xmlrpclib.SafeTransport, CookieTransport):
-    """
-    SafeTransport subclass that supports cookies.
-    """
-    scheme = 'https'
-    request = CookieTransport.request
 
 
 class BugzillaLoginException(Exception):

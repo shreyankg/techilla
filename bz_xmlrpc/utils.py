@@ -10,6 +10,7 @@
 import base64
 from datetime import datetime
 import time
+import urllib2
 
 if hasattr(datetime, 'strptime'):
     #python 2.6
@@ -67,3 +68,38 @@ def show_bug_url(xmlprc_url):
     Returns BZ show_bug.cgi url from xmlrpc.cgi url
     """
     return xmlprc_url.replace('xmlrpc.cgi', 'show_bug.cgi?id=') 
+
+
+def _check_http_error(uri, request_body, response_data):
+    # This pulls some of the guts from urllib to give us HTTP error
+    # code checking. Wrap it all in try/except incase this breaks in
+    # the future, it's only for error handling.
+    try:
+        import httplib
+        import urllib
+
+        class FakeSocket(StringIO.StringIO):
+            def makefile(self, *args, **kwarg):
+                ignore = args
+                ignore = kwarg
+                return self
+
+        httpresp = httplib.HTTPResponse(FakeSocket(response_data))
+        httpresp.begin()
+        resp = urllib.addinfourl(FakeSocket(response_data), httpresp.msg, uri)
+        resp.code = httpresp.status
+        resp.msg = httpresp.reason
+
+        req = urllib2.Request(uri)
+        req.add_data(request_body)
+        opener = urllib2.build_opener()
+
+        for handler in opener.handlers:
+            if hasattr(handler, "http_response"):
+                handler.http_response(req, resp)
+    except urllib2.HTTPError:
+        raise
+    except:
+        pass
+
+

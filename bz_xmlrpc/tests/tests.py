@@ -60,7 +60,7 @@ Another line''',
     'comment3': '''Closed WONTFIX.
 Line two''',
     'commentprivacy': True,
-    'status': 'ON_DEV',
+    'status': 'ASSIGNED',
     'resolution': 'WONTFIX',
     'flags': {
         'needinfo': '+',
@@ -345,7 +345,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(bug.component, [B['component']])
         self.assertEqual(bug.summary, summary)
         self.assertEqual(bug.version, [B['version']])
-        self.assertEqual(bug.description.strip(), description)
+        self.assertEqual(bug.description.strip(), description.strip())
         self.assertEqual(bug.platform, B['platform'])
         self.assertEqual(bug.priority, B['priority'])
         self.assertEqual(bug.severity, B['severity'])
